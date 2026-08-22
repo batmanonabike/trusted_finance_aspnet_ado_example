@@ -1,8 +1,0 @@
-<Solution>
-  <Project Path="TrustedAbstractions/TrustedAbstractions.csproj" Id="01ea53b9-c6f5-4668-800f-f09dbd2254f0" />
-  <Project Path="TrustedJsonDatabase/TrustedJsonDatabase.csproj" Id="181e9f9f-516f-42d4-816f-8219cfece53c" />
-  <Project Path="TrustedSqlDatabase/TrustedSqlDatabase.csproj" Id="37bf0141-6f9c-4dbf-b520-cc123d827dc2" />
-  <Project Path="TrustedTests/TrustedTests.csproj" Id="117dd98b-8922-4442-a827-af2ab87b4fba" />
-  <Project Path="TrustedTools/TrustedTools.csproj" Id="79f42527-0990-4c9f-ab84-536157c9fe27" />
-  <Project Path="TrustedWebApp/TrustedWebApp.csproj" Id="f8b3a1f4-1c82-4620-ab42-6379b0cf661b" />
-</Solution>

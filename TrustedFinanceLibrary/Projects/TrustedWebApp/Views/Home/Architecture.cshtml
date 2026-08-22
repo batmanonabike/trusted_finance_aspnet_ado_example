@@ -1,0 +1,92 @@
+@{
+    ViewData["Title"] = "Architecture";
+}
+
+<h1 class="mb-4">Principles used in this project</h1>
+
+<div class="row row-cols-1 row-cols-md-2 g-4">
+
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-primary text-white">Abstraction</div>
+            <div class="card-body">
+                <p class="card-text">
+                    An abstractions class library holds the main <code>Book</code> class and a handful of
+                    interfaces for repositories/services; there are no specifics on the database vendor.
+                    Everything else in the solution depends on that project, with no other assumptions
+                    other than adhering to the interfaces.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-primary text-white">SOLID (Dependency Inversion, Liskov Substitution)</div>
+            <div class="card-body">
+                <p class="card-text">
+                    I built two interchangeable storage implementations, one for ADO.NET and one for a
+                    simple JSON file. These are completely independent of each other and can be used
+                    interchangeably. Both are injected into the WebApp via DI.
+                </p>
+                <p class="card-text">
+                    JSON will work out of the box, but you can edit <code>appsettings.json</code> to use
+                    SQL instead (it needs a valid connection string). You will also need to run the create
+                    table script if you want to use SQL (I used SQLExpress/SSMS for my testing). The JSON
+                    file is stored as <code>%LOCALAPPDATA%\TrustedLibrary\Json\Library.json</code>.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-primary text-white">Single Responsibility / Loose Coupling</div>
+            <div class="card-body">
+                <p class="card-text">
+                    The books collection itself is exposed as a proper REST API
+                    (<code>BooksController</code>), sitting on top of the same service layer, so it's not
+                    tied to the views. For a production architecture, I'd probably implement a separate
+                    web service.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-primary text-white">DRY</div>
+            <div class="card-body">
+                <p class="card-text">
+                    I've employed <i>not repeating myself</i> throughout this solution, and also note the
+                    decorator pattern used in the tests to ensure clean tear down.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-secondary text-white">Testing</div>
+            <div class="card-body">
+                <p class="card-text">
+                    I've written tests around the books controller, SQL repository, and JSON repository.
+                    Edit the connection string in the tests project if you want those tests to succeed.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-secondary text-white">Out of scope</div>
+            <div class="card-body">
+                <p class="card-text">
+                    Authentication and validation were not mentioned in the requirements.
+                </p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
