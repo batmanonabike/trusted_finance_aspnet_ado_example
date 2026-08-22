@@ -12,8 +12,8 @@ Target framework is **.NET 10**. The solution file is `TrustedFinanceLibrary.sln
 ## Quick start
 
 ```bash
-git clone https://github.com/batmanonabike/trusted_finance_aspnet_ado_example
-cd TrustedFinance/TrustedFinanceLibrary/Projects
+git clone https://github.com/batmanonabike/trusted_finance_aspnet_ado_example.git
+cd trusted_finance_aspnet_ado_example/TrustedFinanceLibrary/Projects
 dotnet build TrustedFinanceLibrary.slnx
 dotnet run --project TrustedWebApp
 ```
@@ -27,8 +27,8 @@ The JSON store lives at `%LOCALAPPDATA%\TrustedLibrary\Json\Library.json`.
 
 Two steps:
 
-1. Run `SQLScripts/CreateTable_Books.sql` against your instance (developed against SQL Express,
-   scripted with SSMS).
+1. Run `TrustedFinanceLibrary/SQLScripts/CreateTable_Books.sql` against your instance (developed
+   against SQL Express, scripted with SSMS).
 2. In `TrustedWebApp/appsettings.json`, point the connection string at your instance and flip the
    toggle:
 
