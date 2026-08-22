@@ -14,7 +14,7 @@ namespace TrustedWebApp.Helpers
         public static void AddTrustedLibrary(this IServiceCollection services)
         {
             services.AddScoped<ILibraryService>(GetLibraryService);
-            services.AddOptions<LibraryOptions>().BindConfiguration("MortonLibrary");
+            services.AddOptions<LibraryOptions>().BindConfiguration("TrustedLibrary");
 
             services.AddScoped<TrustedSqlDatabase.Library, TrustedSqlDatabase.Library>();
             services.AddSingleton<TrustedSqlDatabase.LibrarySettings>(GetSqlLibrarySettings);
@@ -40,8 +40,8 @@ namespace TrustedWebApp.Helpers
         private static TrustedSqlDatabase.LibrarySettings GetSqlLibrarySettings(IServiceProvider serviceProvider)
         {
             var config = serviceProvider.GetRequiredService<IConfiguration>();
-            var connectionString = config.GetConnectionString("MortonLibrary")
-                ?? throw new InvalidOperationException("ConnectionStrings:MortonLibrary is missing.");
+            var connectionString = config.GetConnectionString("TrustedLibrary")
+                ?? throw new InvalidOperationException("ConnectionStrings:TrustedLibrary is missing.");
             return new TrustedSqlDatabase.LibrarySettings { ConnectionString = connectionString };
         }
     }

@@ -15,7 +15,7 @@ namespace TrustedTests.WebAppTests
                 // Lets just use JSON. 
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["MortonLibrary:UseSqlDatabase"] = "false",
+                    ["TrustedLibrary:UseSqlDatabase"] = "false",
                 });
             });
         }
