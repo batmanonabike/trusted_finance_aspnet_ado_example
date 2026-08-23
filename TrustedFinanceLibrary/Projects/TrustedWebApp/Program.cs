@@ -20,7 +20,9 @@ namespace TrustedWebApp
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
+            if (!app.Environment.IsEnvironment("Testing"))
+                app.UseHttpsRedirection();
+
             app.UseRouting();
             app.UseAuthorization();
             app.MapStaticAssets();

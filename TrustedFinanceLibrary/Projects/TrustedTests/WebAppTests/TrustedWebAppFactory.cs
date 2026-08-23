@@ -10,6 +10,7 @@ namespace TrustedTests.WebAppTests
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            builder.UseEnvironment("Testing");
             builder.ConfigureAppConfiguration((_, config) =>
             {
                 // Lets just use JSON. 
