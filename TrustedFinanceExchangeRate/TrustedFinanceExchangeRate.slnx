@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="TrustedAbstractions/TrustedAbstractions.csproj" />
   <Project Path="TrustedCachingRateApi/TrustedCachingRateApi.csproj" />
+  <Project Path="TrustedExchangeWebApi/TrustedExchangeWebApi.csproj" Id="46fb73d7-07f7-4976-9d2b-a382546224cb" />
 </Solution>
