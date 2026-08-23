@@ -1,4 +1,4 @@
-﻿using static TrustedAbstractions.Abstractions;
+﻿using TrustedAbstractions;
 
 namespace TrustedCachingRateApi
 {
