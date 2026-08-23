@@ -1,4 +1,20 @@
-# Trusted Library
+# Trusted Finance Exchange Rate and Library Examples
+
+This repository contains two focused ASP.NET Core examples: a finance exchange-rate API and a
+library management application. Both use small abstractions, dependency injection, and tests to
+keep infrastructure details behind replaceable interfaces.
+
+The **Trusted Library** application is the primary books-focused example: it demonstrates clean
+architecture across an MVC application, REST API, service layer, and interchangeable JSON and
+ADO.NET storage implementations. The **Trusted Finance Exchange Rate** solution is a second,
+smaller example focused on a metered provider and a thread-safe caching decorator.
+
+| Example | Focus |
+|---|---|
+| `TrustedFinanceLibrary` | Books, services, MVC, REST, JSON storage, and SQL Server storage. |
+| `TrustedFinanceExchangeRate` | Exchange rates, `IRateApi`, DI decoration, asynchronous access, and bounded-time caching. |
+
+## Trusted Library
 
 A library management system in ASP.NET Core MVC, built as an exercise in clean separation: a
 domain-only abstractions library, two interchangeable storage implementations selected at runtime
@@ -211,7 +227,7 @@ residue in the database or the JSON file.
 
 ---
 
-## Scope
+## Library Scope
 
 This was written as a technical exercise. The brief asked for six things: a `Books` schema, an
 `IBookService` interface, a single ADO.NET `BookRepository`, a short example of injecting the
@@ -238,3 +254,108 @@ architecture.
 - **Migrations** — a single `CREATE TABLE` script rather than a migration history.
 
 The `Architecture` page in the running application carries a short summary of the same reasoning.
+
+---
+
+## Trusted Finance Exchange Rate
+
+The finance example exposes an asynchronous exchange-rate API targeting **.NET 10**. Its core
+contract is `IRateApi`, which returns the USD value of one unit of a requested currency and the
+list of supported currency codes.
+
+The solution is split into these projects:
+
+| Project | Responsibility |
+|---|---|
+| `TrustedAbstractions` | `IRateApi` and the shared `RateRecord` contract. |
+| `TrustedTools` | `FixedRateApi`, a deterministic provider with simulated remote latency, plus currency normalization. |
+| `TrustedCachingRateApi` | A thread-safe caching decorator around `IRateApi`. |
+| `TrustedExchangeWebApi` | ASP.NET Core controllers, typed configuration, DI registration, and OpenAPI support. |
+| `TrustedTests` | HTTP integration tests using `WebApplicationFactory`. |
+
+### API routes
+
+| Method | Route | Response |
+|---|---|---|
+| `GET` | `/rates/{currencyCode}` | `RateRecord`, or `404` for an unsupported code. |
+| `GET` | `/rates/currencycodes` | The supported currency codes. |
+
+For example:
+
+```http
+GET /rates/USD
+GET /rates/currencycodes
+```
+
+### Decorated caching
+
+The web API registers `CachingRateApi` as the application's `IRateApi` while injecting the
+concrete `FixedRateApi` as its inner provider. This avoids a circular dependency while allowing
+controllers to depend only on the abstraction:
+
+```csharp
+builder.Services.AddCachingRateApi();
+```
+
+The decorator uses a short-lived per-currency cache. A cache hit returns immediately; a miss calls
+the inner provider, stores the result with a timestamp, and returns it. Requests for the same
+currency share a `SemaphoreSlim`, so concurrent callers do not create multiple expensive calls to
+the provider. Requests for different currencies use different semaphores and can proceed
+independently.
+
+The specification treats the real `IRateApi` as a dependency with an associated cost for each
+provider call, including calls that retrieve currency information. The cache is therefore a
+practical cost-control boundary: for the configured time period, repeated requests can be served
+from memory instead of paying for another provider call. This deliberately trades a bounded amount
+of rate freshness for lower call volume. The acceptable period is controlled by `TtlMs`, so the
+trade-off can be adjusted without changing the caching implementation.
+
+Short in-memory operations on the cache and gate dictionaries use a `Lock`. The asynchronous
+provider calls never run inside that lock. Supported currency codes use a separate semaphore for
+one-time asynchronous loading and return a copy of the cached list.
+
+### Configuration
+
+The cache is configured through the `CachingRateApi` section in
+`TrustedExchangeWebApi/appsettings.json`:
+
+```json
+"CachingRateApi": {
+  "MinTtlMs": 10,
+  "TtlMs": 5000
+}
+```
+
+The section is bound to `CachingRateApiOptions` using `IOptions`. Startup validation ensures the
+minimum TTL is positive and the configured TTL is not below that minimum.
+
+### Running the finance API
+
+```bash
+cd trusted_finance_aspnet_ado_example/TrustedFinanceExchangeRate
+dotnet build TrustedFinanceExchangeRate.slnx
+dotnet run --project TrustedExchangeWebApi
+dotnet test TrustedTests/TrustedTests.csproj
+```
+
+The `TrustedExchangeWebApi.http` file contains requests for both routes. The provider is local and
+deterministic, so no external exchange-rate service or API key is required.
+
+---
+
+## Finance Scope
+
+The exchange-rate solution is intentionally a focused `IRateApi` exercise rather than a complete
+financial data platform. The provider is represented by a local deterministic implementation with
+simulated latency, so the sample can demonstrate the cost of provider calls without requiring an
+external account or API key.
+
+The caching decorator is the main production-oriented addition. It assumes that rates remain
+acceptable for a configured period and uses `TtlMs` to bound how long a cached value may be reused.
+That reduces expensive calls to the real provider while keeping the freshness trade-off explicit
+and configurable. A production provider would additionally need an external data source,
+authentication, timeouts, retry policy, observability, and a decision about stale data.
+
+The finance example does not attempt to model trading, settlement, historical rate storage, or
+financial advice. Its scope is the interface boundary, asynchronous access, dependency-injection
+decoration, thread-safe in-memory caching, and the HTTP behavior around those concerns.
