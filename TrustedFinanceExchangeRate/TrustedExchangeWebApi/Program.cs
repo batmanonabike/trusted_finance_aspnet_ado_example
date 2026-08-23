@@ -7,6 +7,7 @@ namespace TrustedExchangeWebApi
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Services.AddCachingRateApi();
             builder.Services.AddControllers();
             builder.Services.AddOpenApi();
 

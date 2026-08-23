@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TrustedAbstractions\TrustedAbstractions.csproj" />
+    <ProjectReference Include="..\TrustedCachingRateApi\TrustedCachingRateApi.csproj" />
     <ProjectReference Include="..\TrustedTools\TrustedTools.csproj" />
   </ItemGroup>
 

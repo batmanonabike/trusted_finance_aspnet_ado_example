@@ -1,56 +1,105 @@
 ﻿using TrustedAbstractions;
+using TrustedTools;
 
 namespace TrustedCachingRateApi
 {
-    public class CachingRateApi : IRateApi
+    public sealed class CachingRateApi : IRateApi, IDisposable
     {
-        private const int MaxTtlMs = 10;
+        private const int MinTtlMs = 10;
         private sealed record CacheEntry(decimal Rate, DateTimeOffset Timestamp);
 
-        private sealed class ConcurrencyGate(string normalCurrencyCode)
+        private sealed class ConcurrencyGate(string normalCurrencyCode) : IDisposable
         {
+            private bool _disposed;
             public int RefCount { get; set; }
-            public Lock Gate { get; } = new();
+            public SemaphoreSlim Semaphore { get; } = new(1, 1);
             public string NormalCurrencyCode { get; } = normalCurrencyCode;
+
+            public void Dispose()
+            {
+                if (!_disposed)
+                {
+                    _disposed = true;
+                    Semaphore.Dispose();
+                }
+            }
         }
 
+        private bool _disposed;
         private readonly int _ttlMs;
+        private bool _haveCurrencyCodes;
         private readonly IRateApi _realApi;
         private readonly Lock _mainGate = new();
         private readonly TimeProvider _timeProvider;
+        private readonly List<string> _currencyCodes = [];
+        private readonly SemaphoreSlim _mainSemaphore = new(1, 1);
         private readonly Dictionary<string, CacheEntry> _cache = [];
         private readonly Dictionary<string, ConcurrencyGate> _concurrencyGates = [];
 
-        public CachingRateApi(IRateApi realApi, int ttlMs, TimeProvider timeProvider)
+        public CachingRateApi(int ttlMs, IRateApi realApi, TimeProvider timeProvider)
         {
             ArgumentNullException.ThrowIfNull(realApi);
             ArgumentNullException.ThrowIfNull(timeProvider);
-            if (ttlMs < MaxTtlMs) throw new ArgumentException($"Invalid ttlMs: {ttlMs}ms", nameof(ttlMs));
+            if (ttlMs < MinTtlMs) throw new ArgumentException($"Invalid ttlMs: {ttlMs}ms", nameof(ttlMs));
 
             _ttlMs = ttlMs;
             _realApi = realApi;
             _timeProvider = timeProvider;
         }
 
-        public decimal GetUsdRate(string currencyCode)
+        public async Task<decimal> GetUsdRate(string currencyCode)
         {
-            var gate = AcquireGate(currencyCode);
+            ThrowIfDisposed();
 
+            var gate = AcquireGate(currencyCode);
             try
             {
-                lock (gate.Gate)
-                {
-                    if (TryGetCachedRate(gate, out var rate))
-                        return rate;
-
-                    rate = _realApi.GetUsdRate(gate.NormalCurrencyCode);
-                    StoreCachedRate(gate, rate);
-                    return rate;
-                }
+                return await GetUsdRateWhileGated(gate);
             }
             finally
             {
                 ReleaseGate(gate);
+            }
+        }
+
+        public async Task<List<string>> GetSupportedCurrencyCodes()
+        {
+            ThrowIfDisposed();
+
+            await _mainSemaphore.WaitAsync();
+
+            try
+            {
+                if (!_haveCurrencyCodes)
+                {
+                    var currencyCodes = await _realApi.GetSupportedCurrencyCodes();
+                    _currencyCodes.AddRange(currencyCodes);
+                    _haveCurrencyCodes = true;
+                }
+                return [.. _currencyCodes];
+            }
+            finally
+            {
+                _mainSemaphore.Release();
+            }
+        }
+
+        private async Task<decimal> GetUsdRateWhileGated(ConcurrencyGate gate)
+        {
+            await gate.Semaphore.WaitAsync();
+
+            try
+            {
+                if (TryGetCachedRate(gate, out var rate))
+                    return rate;
+
+                rate = await _realApi.GetUsdRate(gate.NormalCurrencyCode);
+                StoreCachedRate(gate, rate);
+                return rate;
+            }
+            finally
+            {
+                gate.Semaphore.Release();
             }
         }
 
@@ -71,7 +120,7 @@ namespace TrustedCachingRateApi
 
         private ConcurrencyGate AcquireGate(string currencyCode)
         {
-            string normal = NormaliseCurrencyCode(currencyCode);
+            string normal = Normalise.CurrencyCode(currencyCode);
 
             lock (_mainGate)
             {
@@ -103,7 +152,10 @@ namespace TrustedCachingRateApi
                     if (_concurrencyGates.TryGetValue(gate.NormalCurrencyCode, out var otherGate))
                     {
                         if (ReferenceEquals(gate, otherGate))
+                        {
                             _concurrencyGates.Remove(gate.NormalCurrencyCode);
+                            gate.Dispose();
+                        }
                     }
                 }
             }
@@ -114,19 +166,27 @@ namespace TrustedCachingRateApi
             return (_timeProvider.GetUtcNow() - cacheEntry.Timestamp).TotalMilliseconds > _ttlMs;
         }
 
-        private static string NormaliseCurrencyCode(string currencyCode)
+        public void Dispose()
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(currencyCode);
-
-            return currencyCode.ToUpperInvariant().Trim() switch
+            lock (_mainGate)
             {
-                "USD" => "USD",
-                "GBP" => "GBP",
-                "JPY" => "JPY",
-                "CAD" => "CAD",
-                "EUR" => "EUR",
-                _ => throw new ArgumentException($"Invalid CurrencyCode: {currencyCode}", nameof(currencyCode))
-            };
+                if (!_disposed)
+                {
+                    _disposed = true;
+
+                    _mainSemaphore.Dispose();
+                    foreach (var gate in _concurrencyGates.Values)
+                        gate.Dispose();
+                }
+            }
+        }
+
+        private void ThrowIfDisposed() // Reject calls made after this service has been disposed.
+        {
+            lock (_mainGate)
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+            }
         }
     }
 }

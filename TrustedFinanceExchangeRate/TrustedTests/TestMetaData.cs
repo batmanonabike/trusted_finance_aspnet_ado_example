@@ -5,7 +5,7 @@
         public const string WebApi = "WebApi";
     }
 
-    [CollectionDefinition(TestGroupNames.WebApi, DisableParallelization = true)]
+    [CollectionDefinition(TestGroupNames.WebApi, DisableParallelization = false)]
     public sealed class WebApiTestGroup
     {
     }

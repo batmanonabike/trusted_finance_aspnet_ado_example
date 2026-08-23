@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TrustedAbstractions\TrustedAbstractions.csproj" />
+    <ProjectReference Include="..\TrustedTools\TrustedTools.csproj" />
   </ItemGroup>
 
 </Project>

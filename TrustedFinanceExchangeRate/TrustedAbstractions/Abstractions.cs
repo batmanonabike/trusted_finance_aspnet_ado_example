@@ -14,7 +14,13 @@
         /// Returns how many USD one unit of <paramref name="currencyCode"/> is worth.
         /// </summary>
         /// <exception cref="ArgumentException">The currency is not supported.</exception>
-        decimal GetUsdRate(string currencyCode);
+        Task<decimal> GetUsdRate(string currencyCode);
+
+        /// <summary>
+        /// Returns a list of supported currency codes.
+        /// </summary>
+        /// <returns></returns>
+        Task<List<string>> GetSupportedCurrencyCodes();
     }
 
     public sealed record RateRecord(decimal Rate, string CurrencyCode);

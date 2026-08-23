@@ -1,6 +1,6 @@
 @TrustedExchangeWebApi_HostAddress = http://localhost:5165
 
-GET {{TrustedExchangeWebApi_HostAddress}}/weatherforecast/
+GET {{TrustedExchangeWebApi_HostAddress}}/Rates
 Accept: application/json
 
 ###
