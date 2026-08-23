@@ -5,7 +5,6 @@ namespace TrustedCachingRateApi
 {
     public sealed class CachingRateApi : IRateApi, IDisposable
     {
-        private const int MinTtlMs = 10;
         private sealed record CacheEntry(decimal Rate, DateTimeOffset Timestamp);
 
         private sealed class ConcurrencyGate(string normalCurrencyCode) : IDisposable
@@ -36,11 +35,18 @@ namespace TrustedCachingRateApi
         private readonly Dictionary<string, CacheEntry> _cache = [];
         private readonly Dictionary<string, ConcurrencyGate> _concurrencyGates = [];
 
-        public CachingRateApi(int ttlMs, IRateApi realApi, TimeProvider timeProvider)
+        public CachingRateApi(
+            int ttlMs,
+            int minTtlMs,
+            IRateApi realApi,
+            TimeProvider timeProvider)
         {
             ArgumentNullException.ThrowIfNull(realApi);
             ArgumentNullException.ThrowIfNull(timeProvider);
-            if (ttlMs < MinTtlMs) throw new ArgumentException($"Invalid ttlMs: {ttlMs}ms", nameof(ttlMs));
+            if (minTtlMs < 1)
+                throw new ArgumentOutOfRangeException(nameof(minTtlMs), minTtlMs, "Minimum TTL must be positive.");
+            if (ttlMs < minTtlMs)
+                throw new ArgumentException($"Invalid ttlMs: {ttlMs}ms", nameof(ttlMs));
 
             _ttlMs = ttlMs;
             _realApi = realApi;
@@ -62,7 +68,7 @@ namespace TrustedCachingRateApi
             }
         }
 
-        public async Task<List<string>> GetSupportedCurrencyCodes()
+        public async Task<IReadOnlyList<string>> GetSupportedCurrencyCodes()
         {
             ThrowIfDisposed();
 
@@ -177,6 +183,8 @@ namespace TrustedCachingRateApi
                     _mainSemaphore.Dispose();
                     foreach (var gate in _concurrencyGates.Values)
                         gate.Dispose();
+                    _concurrencyGates.Clear();
+                    _currencyCodes.Clear();
                 }
             }
         }

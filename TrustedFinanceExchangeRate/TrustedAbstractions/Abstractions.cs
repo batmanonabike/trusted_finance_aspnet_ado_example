@@ -20,7 +20,7 @@
         /// Returns a list of supported currency codes.
         /// </summary>
         /// <returns></returns>
-        Task<List<string>> GetSupportedCurrencyCodes();
+        Task<IReadOnlyList<string>> GetSupportedCurrencyCodes();
     }
 
     public sealed record RateRecord(decimal Rate, string CurrencyCode);

@@ -12,8 +12,8 @@ namespace TrustedExchangeWebApi.Controllers
     {
         // GET /rates/USD
         [HttpGet("{currencyCode}")]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(RateRecord), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(RateRecord), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<RateRecord?>> GetUsdRate(string currencyCode)
         {
             try
@@ -30,8 +30,8 @@ namespace TrustedExchangeWebApi.Controllers
             }
         }
 
-        // Get /rates
-        [HttpGet]
+        // GET /rates/currencycodes
+        [HttpGet("currencycodes")]
         [ProducesResponseType(typeof(List<string>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<string>>> GetSupportedCurrencyCodes()
         {

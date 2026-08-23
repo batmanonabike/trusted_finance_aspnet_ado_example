@@ -28,7 +28,7 @@ namespace TrustedTests.WebApiTests
 
         private async Task<List<string>> GetSupportedCurrencyCodes()
         {
-            var response = await _client.GetAsync("/rates");
+            var response = await _client.GetAsync("/rates/currencycodes");
 
             response.EnsureSuccessStatusCode();
 

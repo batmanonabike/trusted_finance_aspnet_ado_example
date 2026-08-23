@@ -18,7 +18,7 @@ namespace TrustedTools
         {
             var normalizedCode = Normalise.CurrencyCode(currencyCode);
 
-            await Task.Delay(300);
+            await Task.Delay(3000);
 
             if (!Rates.TryGetValue(normalizedCode, out var rate))
                 throw new ArgumentException(
@@ -28,9 +28,9 @@ namespace TrustedTools
             return rate;
         }
 
-        public async Task<List<string>> GetSupportedCurrencyCodes()
+        public async Task<IReadOnlyList<string>> GetSupportedCurrencyCodes()
         {
-            await Task.Delay(50);
+            await Task.Delay(100);
             return [.. Rates.Select(rate => rate.Key)];
         }
     }

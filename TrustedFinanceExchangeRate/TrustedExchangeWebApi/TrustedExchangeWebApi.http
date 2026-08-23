@@ -1,6 +1,13 @@
 @TrustedExchangeWebApi_HostAddress = http://localhost:5165
 
-GET {{TrustedExchangeWebApi_HostAddress}}/Rates
+# Get the USD rate
+GET {{TrustedExchangeWebApi_HostAddress}}/rates/USD
+Accept: application/json
+
+###
+
+# Get supported currency codes
+GET {{TrustedExchangeWebApi_HostAddress}}/rates/currencycodes
 Accept: application/json
 
 ###
