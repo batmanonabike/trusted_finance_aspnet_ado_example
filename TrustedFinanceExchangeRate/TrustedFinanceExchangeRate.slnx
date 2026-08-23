@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="TrustedAbstractions/TrustedAbstractions.csproj" />
+  <Project Path="TrustedCachingRateApi/TrustedCachingRateApi.csproj" />
+</Solution>
