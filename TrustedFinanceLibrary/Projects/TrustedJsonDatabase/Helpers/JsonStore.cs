@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using TrustedAbstractions;
 
@@ -10,9 +11,12 @@ namespace TrustedJsonDatabase.Helpers
 
     internal class JsonStore(string path)
     {
-        private readonly Lock _lock = new();
+        private static readonly ConcurrentDictionary<string, Lock> Locks =
+            new(StringComparer.OrdinalIgnoreCase);
 
-        private static readonly JsonSerializerOptions Options = new() 
+        private readonly string _fullPath = Path.GetFullPath(path);
+
+        private static readonly JsonSerializerOptions Options = new()
         {
             WriteIndented = true,
             PropertyNameCaseInsensitive = true,
@@ -20,7 +24,7 @@ namespace TrustedJsonDatabase.Helpers
 
         public T Query<T>(Func<JsonContent, T> query)
         {
-            lock (_lock)
+            lock (GetLockForPath())
             {
                 var content = Load();
                 return query(content);
@@ -29,7 +33,7 @@ namespace TrustedJsonDatabase.Helpers
 
         public T Modify<T>(Func<JsonContent, T> modify)
         {
-            lock (_lock)
+            lock (GetLockForPath())
             {
                 var content = Load();
                 var result = modify(content);
@@ -38,17 +42,22 @@ namespace TrustedJsonDatabase.Helpers
             }
         }
 
+        private Lock GetLockForPath()
+        {
+            return Locks.GetOrAdd(_fullPath, _ => new Lock());
+        }
+
         private JsonContent Load()
         {
-            if (!File.Exists(path)) return new JsonContent();
+            if (!File.Exists(_fullPath)) return new JsonContent();
 
-            var json = File.ReadAllText(path);
+            var json = File.ReadAllText(_fullPath);
             if (string.IsNullOrWhiteSpace(json)) return new JsonContent();
 
             return JsonSerializer.Deserialize<JsonContent>(json, Options) ?? new JsonContent();
         }
 
         private void Save(JsonContent document) =>
-            File.WriteAllText(path, JsonSerializer.Serialize(document, Options));
+            File.WriteAllText(_fullPath, JsonSerializer.Serialize(document, Options));
     }
 }
